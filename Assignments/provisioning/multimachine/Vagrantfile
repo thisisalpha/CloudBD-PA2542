@@ -1,0 +1,33 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+def create_vm(config, node_name)
+  config.vm.define node_name do |vm|
+    vm.vm.host_name = node_name
+    vm.vm.network "private_network", type: "dhcp"
+    vm.vm.box = "ubuntu/xenial64"
+  end
+end  
+
+Vagrant.configure("2") do |config|
+  config.puppet_install.puppet_version = :latest    
+  config.vm.provision :puppet do |pup|
+    pup.environment_path="environments"
+    pup.environment = "test"
+  end
+  config.vm.provider :digital_ocean do |provider, override|
+    override.ssh.private_key_path = '~/.ssh/id_rsa'
+    override.nfs.functional = false
+    override.vm.box = 'digital_ocean'
+    override.vm.box_url = "https://github.com/devopsgroup-io/vagrant-digitalocean/raw/master/box/digital_ocean.box"
+  
+    provider.token = "SECRET"
+    provider.image = 'ubuntu-14-04-x64'
+    provider.region = 'nyc1'
+    provider.size = '512mb'
+    provider.setup = false
+  end
+
+  create_vm(config, "appserver")
+  create_vm(config, "dbserver")
+end
